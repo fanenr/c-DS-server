@@ -1,0 +1,14 @@
+# object file
+*.o
+
+# exe file
+server
+
+# other
+*.json
+.gdb_history
+
+# directory
+!/**/
+
+/.cache/
