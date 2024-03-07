@@ -1,5 +1,6 @@
 #include "api.h"
 #include "mongoose.h"
+#include "table.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,6 +9,8 @@ static void handle (struct mg_connection *conn, int ev, void *ev_data);
 int
 main ()
 {
+  table_init ();
+
   struct mg_mgr mgr;
   mg_mgr_init (&mgr);
 
