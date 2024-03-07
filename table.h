@@ -2,6 +2,7 @@
 #define TABLE_H
 
 #include <jansson.h>
+#include <stdbool.h>
 
 #define PATH_TABLE_MENU "./menu.json"
 #define PATH_TABLE_STUDENT "./student.json"
@@ -26,7 +27,7 @@ typedef struct
 } find_ret;
 
 extern void table_init (void);
-extern void save (json_t *from, const char *to);
+extern bool save (json_t *from, const char *to);
 extern find_ret find_by (json_t *tbl, const char *key, int typ, ...);
 
 #endif

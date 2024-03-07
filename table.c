@@ -1,5 +1,6 @@
 #include "table.h"
 #include "util.h"
+#include <stdbool.h>
 #include <string.h>
 
 json_t *table_menu;
@@ -107,4 +108,24 @@ find_by (json_t *tbl, const char *key, int typ, ...)
 ret:
   va_end (ap);
   return ret;
+}
+
+bool
+save (json_t *from, const char *to)
+{
+  char *str = json_dumps (from, JSON_INDENT (2));
+  if (!str)
+    return false;
+
+  FILE *file = fopen (to, "w+");
+  if (!file)
+    return false;
+
+  size_t len = strlen (str);
+  if (fwrite (str, len, 1, file) != 1)
+    return false;
+
+  fclose (file);
+  free (str);
+  return true;
 }
