@@ -4,10 +4,10 @@
 #include <jansson.h>
 #include <stdbool.h>
 
-#define PATH_TABLE_MENU "./menu.json"
-#define PATH_TABLE_STUDENT "./student.json"
-#define PATH_TABLE_MERCHANT "./merchant.json"
-#define PATH_TABLE_EVALUATION "./evaluation.json"
+#define PATH_TABLE_MENU "./data/menu.json"
+#define PATH_TABLE_STUDENT "./data/student.json"
+#define PATH_TABLE_MERCHANT "./data/merchant.json"
+#define PATH_TABLE_EVALUATION "./data/evaluation.json"
 
 extern json_t *table_menu;
 extern json_t *table_student;

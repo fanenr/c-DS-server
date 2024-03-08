@@ -1,12 +1,11 @@
 MODE = debug
-
 include config.mk
 
-libs := -ljansson
 srcs := main.c api.c table.c util.c mongoose.c
 objs := $(srcs:%.c=%.o)
+libs := -ljansson
 
-.PHONY:	all run
+.PHONY: all run
 all: server
 
 run: server
