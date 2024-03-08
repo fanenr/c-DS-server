@@ -2,6 +2,7 @@
 #define API_H
 
 #include "mongoose.h"
+#include <stdbool.h>
 
 enum
 {
@@ -19,6 +20,7 @@ enum
 typedef struct
 {
   int status;
+  bool need_free;
   const char *content;
 } api_ret;
 
