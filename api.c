@@ -11,6 +11,9 @@ static void student_log (api_ret *ret, json_t *rdat);
 static void merchant_new (api_ret *ret, json_t *rdat);
 static void merchant_log (api_ret *ret, json_t *rdat);
 
+static void student_del (api_ret *ret, json_t *rdat);
+static void merchant_del (api_ret *ret, json_t *rdat);
+
 #define RET_STR(STR) "\"" STR "\""
 
 api_ret
@@ -41,21 +44,33 @@ api_handle (struct mg_http_message *msg)
       goto ret;
     }
 
-  if (mg_http_match_uri (msg, "/api/student/log"))
-    {
-      student_log (&ret, rdat);
-      goto ret;
-    }
-
   if (mg_http_match_uri (msg, "/api/merchant/new"))
     {
       merchant_new (&ret, rdat);
       goto ret;
     }
 
+  if (mg_http_match_uri (msg, "/api/student/log"))
+    {
+      student_log (&ret, rdat);
+      goto ret;
+    }
+
   if (mg_http_match_uri (msg, "/api/merchant/log"))
     {
       merchant_log (&ret, rdat);
+      goto ret;
+    }
+
+  if (mg_http_match_uri (msg, "/api/student/del"))
+    {
+      student_del (&ret, rdat);
+      goto ret;
+    }
+
+  if (mg_http_match_uri (msg, "/api/merchant/del"))
+    {
+      merchant_del (&ret, rdat);
       goto ret;
     }
 
@@ -271,6 +286,100 @@ merchant_log (api_ret *ret, json_t *rdat)
   ret->status = API_OK;
   ret->need_free = true;
   ret->content = info_str;
+  return;
+
+err2:
+  ret->status = API_ERR_INNER;
+  ret->content = RET_STR ("内部错误");
+  return;
+
+err:
+  ret->status = API_ERR_INCOMPLETE;
+  ret->content = RET_STR ("数据不完整");
+}
+
+static inline void
+student_del (api_ret *ret, json_t *rdat)
+{
+  json_t *user = GET (rdat, "user", string, err);
+  json_t *pass = GET (rdat, "pass", string, err);
+
+  const char *user_str = json_string_value (user);
+  const char *pass_str = json_string_value (pass);
+
+  find_ret find = find_by (table_student, "user", TYP_STR, user_str);
+  if (!find.item)
+    {
+      ret->status = API_ERR_NOT_EXIST;
+      ret->content = RET_STR ("帐号不存在");
+      return;
+    }
+
+  json_t *rpass = GET (find.item, "pass", string, err2);
+  const char *rpass_str = json_string_value (rpass);
+
+  if (strcmp (pass_str, rpass_str) != 0)
+    {
+      ret->status = API_ERR_WRONG_PASS;
+      ret->content = RET_STR ("密码错误");
+      return;
+    }
+
+  if (0 != json_array_remove (table_student, find.index))
+    goto err2;
+
+  if (!save (table_student, PATH_TABLE_STUDENT))
+    goto err2;
+
+  ret->status = API_OK;
+  ret->content = RET_STR ("删除成功");
+  return;
+
+err2:
+  ret->status = API_ERR_INNER;
+  ret->content = RET_STR ("内部错误");
+  return;
+
+err:
+  ret->status = API_ERR_INCOMPLETE;
+  ret->content = RET_STR ("数据不完整");
+}
+
+static inline void
+merchant_del (api_ret *ret, json_t *rdat)
+{
+  json_t *user = GET (rdat, "user", string, err);
+  json_t *pass = GET (rdat, "pass", string, err);
+
+  const char *user_str = json_string_value (user);
+  const char *pass_str = json_string_value (pass);
+
+  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+  if (!find.item)
+    {
+      ret->status = API_ERR_NOT_EXIST;
+      ret->content = RET_STR ("帐号不存在");
+      return;
+    }
+
+  json_t *rpass = GET (find.item, "pass", string, err2);
+  const char *rpass_str = json_string_value (rpass);
+
+  if (strcmp (pass_str, rpass_str) != 0)
+    {
+      ret->status = API_ERR_WRONG_PASS;
+      ret->content = RET_STR ("密码错误");
+      return;
+    }
+
+  if (0 != json_array_remove (table_merchant, find.index))
+    goto err2;
+
+  if (!save (table_merchant, PATH_TABLE_MERCHANT))
+    goto err2;
+
+  ret->status = API_OK;
+  ret->content = RET_STR ("删除成功");
   return;
 
 err2:
