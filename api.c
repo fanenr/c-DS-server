@@ -520,7 +520,7 @@ menu_new (api_ret *ret, json_t *rdat)
   json_t *pass = GET (rdat, "pass", string, err);
 
   json_t *name = GET (rdat, "name", string, err);
-  json_t *price = GET (rdat, "price", real, err);
+  json_t *price = GET (rdat, "price", number, err);
 
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
@@ -554,17 +554,19 @@ menu_new (api_ret *ret, json_t *rdat)
       return;
     }
 
+  json_t *id;
   json_t *new;
+
   if (!(new = json_object ()))
     goto err2;
 
-  json_t *id;
+  json_t *nuser = GET (find.item, "name", string, err2);
   if (!(id = json_integer (json_array_size (table_menu))))
     goto err2;
 
   SET_NEW (new, "id", id, err2);
   SET (new, "name", name, err2);
-  SET (new, "user", user, err2);
+  SET (new, "user", nuser, err2);
   SET (new, "price", price, err2);
   SET (new, "position", position, err2);
 
