@@ -1,21 +1,23 @@
 #include "api.h"
 #include "mongoose.h"
 #include "table.h"
+
 #include <jansson.h>
 #include <stdbool.h>
 #include <string.h>
 
 static void student_new (api_ret *ret, json_t *rdat);
 static void student_log (api_ret *ret, json_t *rdat);
+static void student_del (api_ret *ret, json_t *rdat);
+static void student_mod (api_ret *ret, json_t *rdat);
 
 static void merchant_new (api_ret *ret, json_t *rdat);
 static void merchant_log (api_ret *ret, json_t *rdat);
-
-static void student_del (api_ret *ret, json_t *rdat);
 static void merchant_del (api_ret *ret, json_t *rdat);
-
-static void student_mod (api_ret *ret, json_t *rdat);
 static void merchant_mod (api_ret *ret, json_t *rdat);
+
+static void menu_list (api_ret *ret, json_t *rdat);
+static void menu_new (api_ret *ret, json_t *rdat);
 
 #define RET_STR(STR) "\"" STR "\""
 
@@ -49,16 +51,17 @@ api_handle (struct mg_http_message *msg)
     }
 
   API_MATCH (student, new);
-  API_MATCH (merchant, new);
-
   API_MATCH (student, log);
-  API_MATCH (merchant, log);
-
   API_MATCH (student, del);
-  API_MATCH (merchant, del);
-
   API_MATCH (student, mod);
+
+  API_MATCH (merchant, new);
+  API_MATCH (merchant, log);
+  API_MATCH (merchant, del);
   API_MATCH (merchant, mod);
+
+  API_MATCH (menu, list);
+  API_MATCH (menu, new);
 
 #undef API_MATCH
 
@@ -80,6 +83,10 @@ ret:
 
 #define SET(DAT, KEY, VAL, ERR)                                               \
   if (0 != json_object_set (DAT, KEY, VAL))                                   \
+  goto ERR
+
+#define SET_NEW(DAT, KEY, VAL, ERR)                                           \
+  if (0 != json_object_set_new (DAT, KEY, VAL))                               \
   goto ERR
 
 static inline void
@@ -248,8 +255,8 @@ merchant_log (api_ret *ret, json_t *rdat)
 
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
-
   json_t *find = find_by (table_merchant, "user", TYP_STR, user_str).item;
+
   if (!find)
     {
       ret->status = API_ERR_NOT_EXIST;
@@ -445,8 +452,8 @@ merchant_mod (api_ret *ret, json_t *rdat)
 
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
-
   find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+
   if (!find.item)
     {
       ret->status = API_ERR_NOT_EXIST;
@@ -474,6 +481,101 @@ merchant_mod (api_ret *ret, json_t *rdat)
 
   ret->status = API_OK;
   ret->content = RET_STR ("更新成功");
+  return;
+
+err2:
+  ret->status = API_ERR_INNER;
+  ret->content = RET_STR ("内部错误");
+  return;
+
+err:
+  ret->status = API_ERR_INCOMPLETE;
+  ret->content = RET_STR ("数据不完整");
+}
+
+static void
+menu_list (api_ret *ret, json_t *rdat)
+{
+  json_t *user = json_object_get (rdat, "user");
+
+  char *list_str = json_dumps (table_menu, 0);
+  if (!list_str)
+    goto err2;
+
+  ret->status = API_OK;
+  ret->need_free = true;
+  ret->content = list_str;
+  return;
+
+err2:
+  ret->status = API_ERR_INNER;
+  ret->content = RET_STR ("内部错误");
+  return;
+}
+
+static void
+menu_new (api_ret *ret, json_t *rdat)
+{
+  json_t *user = GET (rdat, "user", string, err);
+  json_t *pass = GET (rdat, "pass", string, err);
+
+  json_t *name = GET (rdat, "name", string, err);
+  json_t *price = GET (rdat, "price", real, err);
+
+  const char *user_str = json_string_value (user);
+  const char *pass_str = json_string_value (pass);
+  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+
+  if (!find.item)
+    {
+      ret->status = API_ERR_NOT_EXIST;
+      ret->content = RET_STR ("帐号不存在");
+      return;
+    }
+
+  json_t *rpass = GET (find.item, "pass", string, err2);
+  const char *rpass_str = json_string_value (rpass);
+
+  if (strcmp (pass_str, rpass_str) != 0)
+    {
+      ret->status = API_ERR_WRONG_PASS;
+      ret->content = RET_STR ("密码错误");
+      return;
+    }
+
+  const char *name_str = json_string_value (name);
+  json_t *position = GET (find.item, "position", string, err2);
+  find_ret find2 = find_by (table_menu, "name", TYP_STR, name_str);
+
+  if (find2.item)
+    {
+      ret->status = API_ERR_DUPLICATE;
+      ret->content = RET_STR ("菜品已存在");
+      return;
+    }
+
+  json_t *new;
+  if (!(new = json_object ()))
+    goto err2;
+
+  json_t *id;
+  if (!(id = json_integer (json_array_size (table_menu))))
+    goto err2;
+
+  SET_NEW (new, "id", id, err2);
+  SET (new, "name", name, err2);
+  SET (new, "user", user, err2);
+  SET (new, "price", price, err2);
+  SET (new, "position", position, err2);
+
+  if (0 != json_array_append_new (table_menu, new))
+    goto err2;
+
+  if (!save (table_menu, PATH_TABLE_MENU))
+    goto err2;
+
+  ret->status = API_OK;
+  ret->content = RET_STR ("添加成功");
   return;
 
 err2:
