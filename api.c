@@ -19,6 +19,7 @@ static void merchant_del (api_ret *ret, json_t *rdat);
 static void menu_list (api_ret *ret, json_t *rdat);
 static void menu_new (api_ret *ret, json_t *rdat);
 static void menu_mod (api_ret *ret, json_t *rdat);
+static void menu_del (api_ret *ret, json_t *rdat);
 
 #define RET_STR(STR) "\"" STR "\""
 
@@ -64,6 +65,7 @@ api_handle (struct mg_http_message *msg)
   API_MATCH (menu, list);
   API_MATCH (menu, new);
   API_MATCH (menu, mod);
+  API_MATCH (menu, del);
 
 #undef API_MATCH
 
@@ -74,6 +76,8 @@ ret:
   json_decref (rdat);
   return ret;
 }
+
+#define ISSEQ(S1, S2) (strcmp (S1, S2) == 0)
 
 #define GET(DAT, KEY, TYP, ERR)                                               \
   ({                                                                          \
@@ -167,7 +171,7 @@ student_log (api_ret *ret, json_t *rdat)
   json_t *rpass = GET (find, "pass", string, err2);
   const char *rpass_str = json_string_value (rpass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -217,7 +221,7 @@ student_mod (api_ret *ret, json_t *rdat)
   json_t *rpass = GET (find.item, "pass", string, err2);
   const char *rpass_str = json_string_value (rpass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -265,7 +269,7 @@ student_del (api_ret *ret, json_t *rdat)
   json_t *rpass = GET (find.item, "pass", string, err2);
   const char *rpass_str = json_string_value (rpass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -368,7 +372,7 @@ merchant_log (api_ret *ret, json_t *rdat)
   json_t *rpass = GET (find, "pass", string, err2);
   const char *rpass_str = json_string_value (rpass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -416,11 +420,13 @@ merchant_mod (api_ret *ret, json_t *rdat)
       return;
     }
 
+  json_t *ruser = GET (find.item, "user", string, err2);
   json_t *rname = GET (find.item, "name", string, err2);
+  const char *ruser_str = json_string_value (ruser);
   const char *rname_str = json_string_value (rname);
   const char *nname_str = json_string_value (nname);
 
-  if (strcmp (nname_str, rname_str) == 0)
+  if (ISSEQ (nname_str, rname_str) && !ISSEQ (user_str, ruser_str))
     {
       ret->status = API_ERR_DUPLICATE;
       ret->content = RET_STR ("名称已存在");
@@ -430,7 +436,7 @@ merchant_mod (api_ret *ret, json_t *rdat)
   json_t *rpass = GET (find.item, "pass", string, err2);
   const char *rpass_str = json_string_value (rpass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -479,7 +485,7 @@ merchant_del (api_ret *ret, json_t *rdat)
   json_t *rpass = GET (find.item, "pass", string, err2);
   const char *rpass_str = json_string_value (rpass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -511,7 +517,7 @@ menu_list (api_ret *ret, json_t *rdat)
 {
   json_t *user = json_object_get (rdat, "user");
 
-  json_t *arr = NULL, *temp;
+  json_t *arr, *temp;
   size_t num = json_array_size (table_menu);
 
   if (!(arr = json_array ()))
@@ -593,7 +599,7 @@ menu_new (api_ret *ret, json_t *rdat)
   json_t *rpass = GET (find.item, "pass", string, err2);
   const char *rpass_str = json_string_value (rpass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -601,8 +607,17 @@ menu_new (api_ret *ret, json_t *rdat)
     }
 
   json_t *id, *new;
+  json_int_t id_int = 0;
+  size_t size = json_array_size (table_menu);
 
-  if (!(id = json_integer (json_array_size (table_menu))))
+  if (size)
+    {
+      json_t *last = json_array_get (table_menu, size - 1);
+      json_t *last_id = GET (last, "id", integer, err2);
+      id_int = json_integer_value (last_id) + 1;
+    }
+
+  if (!(id = json_integer (id_int)))
     goto err2;
 
   if (!(new = json_object ()))
@@ -672,7 +687,7 @@ menu_mod (api_ret *ret, json_t *rdat)
   json_t *ruser = GET (find2.item, "user", string, err2);
   const char *ruser_str = json_string_value (ruser);
 
-  if (strcmp (user_str, ruser_str) != 0)
+  if (!ISSEQ (user_str, ruser_str))
     {
       ret->status = API_ERR_NOT_EXIST;
       ret->content = RET_STR ("菜品非该商户所有");
@@ -683,7 +698,7 @@ menu_mod (api_ret *ret, json_t *rdat)
   const char *rpass_str = json_string_value (rpass);
   const char *pass_str = json_string_value (pass);
 
-  if (strcmp (pass_str, rpass_str) != 0)
+  if (!ISSEQ (pass_str, rpass_str))
     {
       ret->status = API_ERR_WRONG_PASS;
       ret->content = RET_STR ("密码错误");
@@ -698,6 +713,74 @@ menu_mod (api_ret *ret, json_t *rdat)
 
   ret->status = API_OK;
   ret->content = RET_STR ("修改成功");
+  return;
+
+err2:
+  ret->status = API_ERR_INNER;
+  ret->content = RET_STR ("内部错误");
+  return;
+
+err:
+  ret->status = API_ERR_INCOMPLETE;
+  ret->content = RET_STR ("数据不完整");
+}
+
+static void
+menu_del (api_ret *ret, json_t *rdat)
+{
+  json_t *user = GET (rdat, "user", string, err);
+  json_t *pass = GET (rdat, "pass", string, err);
+  json_t *id = GET (rdat, "id", integer, err);
+
+  const char *user_str = json_string_value (user);
+  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+
+  if (!find.item)
+    {
+      ret->status = API_ERR_NOT_EXIST;
+      ret->content = RET_STR ("帐号不存在");
+      return;
+    }
+
+  json_int_t id_int = json_integer_value (id);
+  find_ret find2 = find_by (table_menu, "id", TYP_INT, id_int);
+
+  if (!find2.item)
+    {
+      ret->status = API_ERR_NOT_EXIST;
+      ret->content = RET_STR ("菜品不存在");
+      return;
+    }
+
+  json_t *ruser = GET (find2.item, "user", string, err2);
+  const char *ruser_str = json_string_value (ruser);
+
+  if (!ISSEQ (user_str, ruser_str))
+    {
+      ret->status = API_ERR_NOT_EXIST;
+      ret->content = RET_STR ("菜品非该商户所有");
+      return;
+    }
+
+  json_t *rpass = GET (find.item, "pass", string, err2);
+  const char *rpass_str = json_string_value (rpass);
+  const char *pass_str = json_string_value (pass);
+
+  if (!ISSEQ (pass_str, rpass_str))
+    {
+      ret->status = API_ERR_WRONG_PASS;
+      ret->content = RET_STR ("密码错误");
+      return;
+    }
+
+  if (0 != json_array_remove (table_menu, find2.index))
+    goto err2;
+
+  if (!save (table_menu, PATH_TABLE_MENU))
+    goto err2;
+
+  ret->status = API_OK;
+  ret->content = RET_STR ("删除成功");
   return;
 
 err2:
