@@ -77,7 +77,7 @@ find_by (json_t *tbl, find_pair_t *cnd, size_t num)
 
           if (pair->typ == TYP_INT)
             {
-              if (json_is_integer (temp))
+              if (!json_is_integer (temp))
                 error ("类型不匹配");
               ival = json_integer_value (temp);
               if (pair->val.ival != ival)
@@ -85,7 +85,7 @@ find_by (json_t *tbl, find_pair_t *cnd, size_t num)
             }
           else if (pair->typ == TYP_STR)
             {
-              if (json_is_string (temp))
+              if (!json_is_string (temp))
                 error ("类型不匹配");
               sval = json_string_value (temp);
               if (0 != strcmp (pair->val.sval, sval))
