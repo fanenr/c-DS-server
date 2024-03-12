@@ -97,6 +97,14 @@ ret:
   if (0 != json_object_set_new (DAT, KEY, VAL))                               \
   goto ERR
 
+#define FIND_BY1(TBL, KEY1, TYP1, VAL1)                                       \
+  ({                                                                          \
+    find_pair_t cnd[]                                                         \
+        = { { .typ = TYP1, .val = (find_val_t)VAL1, .key = KEY1 } };          \
+    find_ret_t ret = find_by (TBL, cnd, 1);                                   \
+    ret;                                                                      \
+  })
+
 static inline void
 student_new (api_ret *ret, json_t *rdat)
 {
@@ -110,14 +118,14 @@ student_new (api_ret *ret, json_t *rdat)
   const char *user_str = json_string_value (user);
   const char *id_str = json_string_value (id);
 
-  if (find_by (table_student, "user", TYP_STR, user_str).item)
+  if (FIND_BY1 (table_student, "user", TYP_STR, user_str).item)
     {
       ret->status = API_ERR_DUPLICATE;
       ret->content = RET_STR ("帐号已存在");
       return;
     }
 
-  if (find_by (table_student, "id", TYP_STR, id_str).item)
+  if (FIND_BY1 (table_student, "id", TYP_STR, id_str).item)
     {
       ret->status = API_ERR_DUPLICATE;
       ret->content = RET_STR ("学号已存在");
@@ -162,7 +170,7 @@ student_log (api_ret *ret, json_t *rdat)
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
 
-  json_t *find = find_by (table_student, "user", TYP_STR, user_str).item;
+  json_t *find = FIND_BY1 (table_student, "user", TYP_STR, user_str).item;
   if (!find)
     {
       ret->status = API_ERR_NOT_EXIST;
@@ -212,7 +220,7 @@ student_mod (api_ret *ret, json_t *rdat)
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
 
-  find_ret find = find_by (table_student, "user", TYP_STR, user_str);
+  find_ret_t find = FIND_BY1 (table_student, "user", TYP_STR, user_str);
   if (!find.item)
     {
       ret->status = API_ERR_NOT_EXIST;
@@ -260,7 +268,7 @@ student_del (api_ret *ret, json_t *rdat)
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
 
-  find_ret find = find_by (table_student, "user", TYP_STR, user_str);
+  find_ret_t find = FIND_BY1 (table_student, "user", TYP_STR, user_str);
   if (!find.item)
     {
       ret->status = API_ERR_NOT_EXIST;
@@ -311,14 +319,14 @@ merchant_new (api_ret *ret, json_t *rdat)
   const char *user_str = json_string_value (user);
   const char *name_str = json_string_value (name);
 
-  if (find_by (table_merchant, "user", TYP_STR, user_str).item)
+  if (FIND_BY1 (table_merchant, "user", TYP_STR, user_str).item)
     {
       ret->status = API_ERR_DUPLICATE;
       ret->content = RET_STR ("帐号已存在");
       return;
     }
 
-  if (find_by (table_merchant, "name", TYP_STR, name_str).item)
+  if (FIND_BY1 (table_merchant, "name", TYP_STR, name_str).item)
     {
       ret->status = API_ERR_DUPLICATE;
       ret->content = RET_STR ("名称已存在");
@@ -362,7 +370,7 @@ merchant_log (api_ret *ret, json_t *rdat)
 
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
-  json_t *find = find_by (table_merchant, "user", TYP_STR, user_str).item;
+  json_t *find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str).item;
 
   if (!find)
     {
@@ -413,7 +421,7 @@ merchant_mod (api_ret *ret, json_t *rdat)
 
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
-  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+  find_ret_t find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str);
 
   if (!find.item)
     {
@@ -476,7 +484,7 @@ merchant_del (api_ret *ret, json_t *rdat)
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
 
-  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+  find_ret_t find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str);
   if (!find.item)
     {
       ret->status = API_ERR_NOT_EXIST;
@@ -535,7 +543,7 @@ menu_list (api_ret *ret, json_t *rdat)
       json_t *price = GET (item, "price", number, err);
 
       const char *user_str = json_string_value (user);
-      find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+      find_ret_t find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str);
 
       if (!find.item)
         goto err;
@@ -589,7 +597,7 @@ menu_new (api_ret *ret, json_t *rdat)
 
   const char *user_str = json_string_value (user);
   const char *pass_str = json_string_value (pass);
-  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+  find_ret_t find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str);
 
   if (!find.item)
     {
@@ -667,7 +675,7 @@ menu_mod (api_ret *ret, json_t *rdat)
   json_t *nprice = GET (rdat, "nprice", number, err);
 
   const char *user_str = json_string_value (user);
-  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+  find_ret_t find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str);
 
   if (!find.item)
     {
@@ -677,7 +685,7 @@ menu_mod (api_ret *ret, json_t *rdat)
     }
 
   json_int_t id_int = json_integer_value (id);
-  find_ret find2 = find_by (table_menu, "id", TYP_INT, id_int);
+  find_ret_t find2 = FIND_BY1 (table_menu, "id", TYP_INT, id_int);
 
   if (!find2.item)
     {
@@ -735,7 +743,7 @@ menu_del (api_ret *ret, json_t *rdat)
   json_t *id = GET (rdat, "id", integer, err);
 
   const char *user_str = json_string_value (user);
-  find_ret find = find_by (table_merchant, "user", TYP_STR, user_str);
+  find_ret_t find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str);
 
   if (!find.item)
     {
@@ -745,7 +753,7 @@ menu_del (api_ret *ret, json_t *rdat)
     }
 
   json_int_t id_int = json_integer_value (id);
-  find_ret find2 = find_by (table_menu, "id", TYP_INT, id_int);
+  find_ret_t find2 = FIND_BY1 (table_menu, "id", TYP_INT, id_int);
 
   if (!find2.item)
     {
@@ -805,7 +813,7 @@ eva_new (api_ret *ret, json_t *rdat)
   json_t *evaluation = GET (rdat, "evaluation", string, err);
 
   json_int_t id_int = json_integer_value (id);
-  find_ret find = find_by (table_menu, "id", TYP_INT, id_int);
+  find_ret_t find = FIND_BY1 (table_menu, "id", TYP_INT, id_int);
 
   if (!find.item)
     {
