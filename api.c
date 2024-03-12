@@ -21,6 +21,8 @@ static void menu_new (api_ret *ret, json_t *rdat);
 static void menu_mod (api_ret *ret, json_t *rdat);
 static void menu_del (api_ret *ret, json_t *rdat);
 
+static void eva_new (api_ret *ret, json_t *rdat);
+
 #define RET_STR(STR) "\"" STR "\""
 
 api_ret
@@ -512,7 +514,7 @@ err:
   ret->content = RET_STR ("数据不完整");
 }
 
-static void
+static inline void
 menu_list (api_ret *ret, json_t *rdat)
 {
   json_t *user = json_object_get (rdat, "user");
@@ -576,7 +578,7 @@ err:
   return;
 }
 
-static void
+static inline void
 menu_new (api_ret *ret, json_t *rdat)
 {
   json_t *user = GET (rdat, "user", string, err);
@@ -654,7 +656,7 @@ err:
   ret->content = RET_STR ("数据不完整");
 }
 
-static void
+static inline void
 menu_mod (api_ret *ret, json_t *rdat)
 {
   json_t *user = GET (rdat, "user", string, err);
@@ -725,7 +727,7 @@ err:
   ret->content = RET_STR ("数据不完整");
 }
 
-static void
+static inline void
 menu_del (api_ret *ret, json_t *rdat)
 {
   json_t *user = GET (rdat, "user", string, err);
@@ -787,6 +789,30 @@ err2:
   ret->status = API_ERR_INNER;
   ret->content = RET_STR ("内部错误");
   return;
+
+err:
+  ret->status = API_ERR_INCOMPLETE;
+  ret->content = RET_STR ("数据不完整");
+}
+
+static inline void
+eva_new (api_ret *ret, json_t *rdat)
+{
+  json_t *id = GET (rdat, "id", integer, err);
+  json_t *user = GET (rdat, "user", string, err);
+  json_t *pass = GET (rdat, "pass", string, err);
+  json_t *grade = GET (rdat, "grade", number, err);
+  json_t *evaluation = GET (rdat, "evaluation", string, err);
+
+  json_int_t id_int = json_integer_value (id);
+  find_ret find = find_by (table_menu, "id", TYP_INT, id_int);
+
+  if (!find.item)
+    {
+      ret->status = API_ERR_NOT_EXIST;
+      ret->content = RET_STR ("菜品不存在");
+      return;
+    }
 
 err:
   ret->status = API_ERR_INCOMPLETE;
