@@ -1,6 +1,5 @@
 #include "table.h"
 #include "util.h"
-#include <stdbool.h>
 #include <string.h>
 
 json_t *table_menu;
@@ -54,59 +53,57 @@ table_init ()
   table_evaluation = load_table (load_file (PATH_TABLE_EVALUATION));
 }
 
-find_ret
-find_by (json_t *tbl, const char *key, int typ, ...)
+find_ret_t
+find_by (json_t *tbl, find_pair_t *cnd, size_t num)
 {
-  find_ret ret = { .item = NULL };
+  find_ret_t ret = { .item = NULL };
+  size_t size = json_array_size (tbl);
 
-  int ival;
-  char *sval;
-  size_t size;
-
-  va_list ap;
-  va_start (ap, typ);
-
-  if (!(size = json_array_size (tbl)))
-    goto ret;
-
-  switch (typ)
-    {
-    case TYP_INT:
-      ival = va_arg (ap, int);
-      break;
-    case TYP_STR:
-      sval = va_arg (ap, char *);
-      break;
-    default:
-      error ("未知数据类型 %d", typ);
-    }
+  json_int_t ival;
+  const char *sval;
+  json_t *temp, *item;
 
   for (size_t i = 0; i < size; i++)
     {
-      json_t *item = json_array_get (tbl, i);
-      json_t *jval = json_object_get (item, key);
-      if (!jval)
-        error ("json 数据格式错误: 缺少 %s 键值", key);
+      if (!(item = json_array_get (tbl, i)))
+        error ("json 格式损坏");
 
-      switch (typ)
+      for (size_t j = 0; j < num; j++)
         {
-        case TYP_INT:
-          if (ival != json_integer_value (jval))
-            continue;
-          break;
-        case TYP_STR:
-          if (strcmp (sval, json_string_value (jval)) != 0)
-            continue;
-          break;
+          find_pair_t *pair = cnd + j;
+
+          if (!(temp = json_object_get (item, pair->key)))
+            error ("不存在键 %s", pair->key);
+
+          if (pair->typ == TYP_INT)
+            {
+              if (json_is_integer (temp))
+                error ("类型不匹配");
+              ival = json_integer_value (temp);
+              if (pair->val.ival != ival)
+                goto next;
+            }
+          else if (pair->typ == TYP_STR)
+            {
+              if (json_is_string (temp))
+                error ("类型不匹配");
+              sval = json_string_value (temp);
+              if (0 != strcmp (pair->val.sval, sval))
+                goto next;
+            }
+          else
+            error ("未知类型 %d", pair->typ);
         }
 
       ret.item = item;
       ret.index = i;
       goto ret;
+
+    next:
+      continue;
     }
 
 ret:
-  va_end (ap);
   return ret;
 }
 
