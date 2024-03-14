@@ -124,6 +124,9 @@ api_handle (struct mg_http_message *msg)
   API_MATCH (menu, mod);
   API_MATCH (menu, del);
 
+  API_MATCH (eva, list);
+  API_MATCH (eva, new);
+
 #undef API_MATCH
 
   ret.status = API_ERR_UNKNOWN;
@@ -474,9 +477,6 @@ menu_list (api_ret *ret, json_t *rdat)
       const char *user_str = json_string_value (user);
       find_ret_t find = FIND_BY1 (table_merchant, "user", TYP_STR, user_str);
 
-      if (!find.item)
-        goto err;
-
       json_t *uname = GET (find.item, "name", string, err);
       json_t *position = GET (find.item, "position", string, err);
 
@@ -498,9 +498,10 @@ menu_list (api_ret *ret, json_t *rdat)
   if (!list_str)
     goto err2;
 
-  ret->status = API_OK;
-  ret->need_free = true;
   ret->content = list_str;
+  ret->need_free = true;
+  ret->status = API_OK;
+  json_decref (arr);
   return;
 
 err3:
@@ -667,6 +668,72 @@ menu_del (api_ret *ret, json_t *rdat)
     goto err2;
 
   RET_STR (ret, API_OK, "修改成功");
+
+err2:
+  RET_STR (ret, API_ERR_INNER, "内部错误");
+
+err:
+  RET_STR (ret, API_ERR_INCOMPLETE, "数据不完整");
+}
+
+static inline void
+eva_list (api_ret *ret, json_t *rdat)
+{
+  json_t *arr, *temp;
+  json_t *id = GET (rdat, "id", integer, err);
+  json_int_t id_int = json_integer_value (id);
+  size_t size = json_array_size (table_evaluation);
+
+  if (!(arr = json_array ()))
+    goto err2;
+
+  for (size_t i = 0; i < size; i++)
+    {
+      json_t *item = json_array_get (table_evaluation, i);
+
+      json_t *item_id = GET (item, "id", integer, err2);
+      json_int_t item_id_int = json_integer_value (item_id);
+
+      if (item_id_int != id_int)
+        continue;
+
+      json_t *evaluation = GET (item, "evaluation", string, err2);
+      json_t *grade = GET (item, "grade", number, err2);
+      json_t *user = GET (item, "user", string, err2);
+      const char *user_str = json_string_value (user);
+
+      find_ret_t find = FIND_BY1 (table_student, "user", TYP_STR, user_str);
+      json_t *uname = GET (find.item, "name", string, err2);
+      const char *uname_str = json_string_value (uname);
+
+      if (!(temp = json_object ()))
+        goto err2;
+
+      SET (temp, "id", id, err4);
+      SET (temp, "user", user, err4);
+      SET (temp, "uname", uname, err4);
+      SET (temp, "grade", grade, err4);
+      SET (temp, "evaluation", evaluation, err4);
+
+      if (0 != json_array_append_new (arr, temp))
+        goto err4;
+    }
+
+  char *list_str = json_dumps (arr, 0);
+  if (!list_str)
+    goto err3;
+
+  ret->content = list_str;
+  ret->need_free = true;
+  ret->status = API_OK;
+  json_decref (arr);
+  return;
+
+err4:
+  json_decref (temp);
+
+err3:
+  json_decref (arr);
 
 err2:
   RET_STR (ret, API_ERR_INNER, "内部错误");
