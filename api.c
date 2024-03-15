@@ -126,6 +126,8 @@ api_handle (struct mg_http_message *msg)
 
   API_MATCH (eva, list);
   API_MATCH (eva, new);
+  API_MATCH (eva, mod);
+  API_MATCH (eva, del);
 
 #undef API_MATCH
 
@@ -239,9 +241,10 @@ student_mod (api_ret *ret, json_t *rdat)
   if (!ISSEQ (pass_str, rpass_str))
     RET_STR (ret, API_ERR_WRONG_PASS, "密码错误");
 
-  SET (find.item, "pass", npass, err2);
-  SET (find.item, "name", nname, err2);
-  SET (find.item, "number", nnumber, err2);
+  json_t *old = find.item;
+  SET (old, "pass", npass, err2);
+  SET (old, "name", nname, err2);
+  SET (old, "number", nnumber, err2);
 
   if (!save (table_student, PATH_TABLE_STUDENT))
     goto err2;
@@ -404,10 +407,11 @@ merchant_mod (api_ret *ret, json_t *rdat)
   if (!ISSEQ (pass_str, rpass_str))
     RET_STR (ret, API_ERR_WRONG_PASS, "密码错误");
 
-  SET (find.item, "pass", npass, err2);
-  SET (find.item, "name", nname, err2);
-  SET (find.item, "number", nnumber, err2);
-  SET (find.item, "position", nposition, err2);
+  json_t *old = find.item;
+  SET (old, "pass", npass, err2);
+  SET (old, "name", nname, err2);
+  SET (old, "number", nnumber, err2);
+  SET (old, "position", nposition, err2);
 
   if (!save (table_merchant, PATH_TABLE_MERCHANT))
     goto err2;
@@ -614,8 +618,9 @@ menu_mod (api_ret *ret, json_t *rdat)
   if (!ISSEQ (pass_str, rpass_str))
     RET_STR (ret, API_ERR_WRONG_PASS, "密码错误");
 
-  SET (find2.item, "name", nname, err2);
-  SET (find2.item, "price", nprice, err2);
+  json_t *old = find2.item;
+  SET (old, "name", nname, err2);
+  SET (old, "price", nprice, err2);
 
   if (!save (table_menu, PATH_TABLE_MENU))
     goto err2;
@@ -796,6 +801,105 @@ eva_new (api_ret *ret, json_t *rdat)
 
 err3:
   json_decref (new);
+
+err2:
+  RET_STR (ret, API_ERR_INNER, "内部错误");
+
+err:
+  RET_STR (ret, API_ERR_INCOMPLETE, "数据不完整");
+}
+
+static inline void
+eva_mod (api_ret *ret, json_t *rdat)
+{
+  json_t *user = GET (rdat, "user", string, err);
+  json_t *pass = GET (rdat, "pass", string, err);
+
+  json_t *id = GET (rdat, "id", integer, err);
+  json_t *ngrade = GET (rdat, "ngrade", number, err);
+  json_t *nevaluation = GET (rdat, "nevaluation", string, err);
+
+  json_int_t id_int = json_integer_value (id);
+  find_ret_t find = FIND_BY1 (table_menu, "id", TYP_INT, id_int);
+
+  if (!find.item)
+    RET_STR (ret, API_ERR_NOT_EXIST, "菜品不存在");
+
+  const char *user_str = json_string_value (user);
+  find_ret_t find2 = FIND_BY1 (table_student, "user", TYP_STR, user_str);
+
+  if (!find.item)
+    RET_STR (ret, API_ERR_NOT_EXIST, "帐号不存在");
+
+  json_t *rpass = GET (find2.item, "pass", string, err);
+  const char *rpass_str = json_string_value (rpass);
+  const char *pass_str = json_string_value (pass);
+
+  if (!ISSEQ (pass_str, rpass_str))
+    RET_STR (ret, API_ERR_WRONG_PASS, "密码错误");
+
+  find_ret_t find3 = FIND_BY2 (table_evaluation, "id", TYP_INT, id_int, "user",
+                               TYP_STR, user_str);
+
+  if (!find3.item)
+    RET_STR (ret, API_ERR_NOT_EXIST, "未评价过该菜品");
+
+  json_t *old = find3.item;
+  SET (old, "grade", ngrade, err2);
+  SET (old, "evaluation", nevaluation, err2);
+
+  if (!save (table_evaluation, PATH_TABLE_EVALUATION))
+    goto err2;
+
+  RET_STR (ret, API_OK, "修改成功");
+
+err2:
+  RET_STR (ret, API_ERR_INNER, "内部错误");
+
+err:
+  RET_STR (ret, API_ERR_INCOMPLETE, "数据不完整");
+}
+
+static inline void
+eva_del (api_ret *ret, json_t *rdat)
+{
+  json_t *user = GET (rdat, "user", string, err);
+  json_t *pass = GET (rdat, "pass", string, err);
+
+  json_t *id = GET (rdat, "id", integer, err);
+
+  json_int_t id_int = json_integer_value (id);
+  find_ret_t find = FIND_BY1 (table_menu, "id", TYP_INT, id_int);
+
+  if (!find.item)
+    RET_STR (ret, API_ERR_NOT_EXIST, "菜品不存在");
+
+  const char *user_str = json_string_value (user);
+  find_ret_t find2 = FIND_BY1 (table_student, "user", TYP_STR, user_str);
+
+  if (!find.item)
+    RET_STR (ret, API_ERR_NOT_EXIST, "帐号不存在");
+
+  json_t *rpass = GET (find2.item, "pass", string, err);
+  const char *rpass_str = json_string_value (rpass);
+  const char *pass_str = json_string_value (pass);
+
+  if (!ISSEQ (pass_str, rpass_str))
+    RET_STR (ret, API_ERR_WRONG_PASS, "密码错误");
+
+  find_ret_t find3 = FIND_BY2 (table_evaluation, "id", TYP_INT, id_int, "user",
+                               TYP_STR, user_str);
+
+  if (!find3.item)
+    RET_STR (ret, API_ERR_NOT_EXIST, "未评价过该菜品");
+
+  if (0 != json_array_remove (table_evaluation, find3.index))
+    goto err2;
+
+  if (!save (table_evaluation, PATH_TABLE_EVALUATION))
+    goto err2;
+
+  RET_STR (ret, API_OK, "删除成功");
 
 err2:
   RET_STR (ret, API_ERR_INNER, "内部错误");
