@@ -1,10 +1,18 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define error(FMT, ...)                                                       \
-  eprintf ("%s (%d): " FMT "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#include <stdio.h>
 
-extern void eprintf (const char *fmt, ...)
-    __attribute__ ((noreturn, format (printf, 1, 2)));
+#define error(FMT, ...)                                                       \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "%s (%s:%d): ", __FILE__, __FUNCTION__, __LINE__);     \
+      fprintf (stderr, FMT, ##__VA_ARGS__);                                   \
+      fprintf (stderr, "\n");                                                 \
+      quit ();                                                                \
+    }                                                                         \
+  while (0)
+
+extern void quit (void) __attribute__ ((noreturn));
 
 #endif

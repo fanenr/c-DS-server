@@ -40,18 +40,14 @@ static void eva_del (api_ret *ret, json_t *rdat);
 
 #define SET(OBJ, KEY, VAL, ERR)                                               \
   do                                                                          \
-    {                                                                         \
-      if (0 != json_object_set ((OBJ), (KEY), (VAL)))                         \
-        goto ERR;                                                             \
-    }                                                                         \
+    if (0 != json_object_set ((OBJ), (KEY), (VAL)))                           \
+      goto ERR;                                                               \
   while (0)
 
 #define SET_NEW(OBJ, KEY, VAL, ERR)                                           \
   do                                                                          \
-    {                                                                         \
-      if (0 != json_object_set_new ((OBJ), (KEY), (VAL)))                     \
-        goto ERR;                                                             \
-    }                                                                         \
+    if (0 != json_object_set_new ((OBJ), (KEY), (VAL)))                       \
+      goto ERR;                                                               \
   while (0)
 
 #define RET_STR(PRET, CODE, STR)                                              \
@@ -103,11 +99,13 @@ api_handle (struct mg_http_message *msg)
     }
 
 #define API_MATCH(TYPE, API)                                                  \
-  if (mg_http_match_uri (msg, "/api/" #TYPE "/" #API))                        \
-    {                                                                         \
-      TYPE##_##API (&ret, rdat);                                              \
-      goto ret;                                                               \
-    }
+  do                                                                          \
+    if (mg_http_match_uri (msg, "/api/" #TYPE "/" #API))                      \
+      {                                                                       \
+        TYPE##_##API (&ret, rdat);                                            \
+        goto ret;                                                             \
+      }                                                                       \
+  while (0)
 
   API_MATCH (student, new);
   API_MATCH (student, log);

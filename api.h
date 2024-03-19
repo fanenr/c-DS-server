@@ -1,8 +1,8 @@
 #ifndef API_H
 #define API_H
 
-#include "mongoose.h"
 #include <stdbool.h>
+struct mg_http_message;
 
 enum
 {
