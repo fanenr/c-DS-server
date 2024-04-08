@@ -1,7 +1,7 @@
 MODE = debug
 include config.mk
 
-srcs := main.c api.c table.c util.c mongoose.c
+srcs := main.c api.c table.c mongoose.c
 objs := $(srcs:%.c=%.o)
 libs := -ljansson
 

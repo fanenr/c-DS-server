@@ -6,13 +6,11 @@
 #define error(FMT, ...)                                                       \
   do                                                                          \
     {                                                                         \
-      fprintf (stderr, "%s (%s:%d): ", __FILE__, __FUNCTION__, __LINE__);     \
+      fprintf (stderr, "%s:%d (%s): ", __FUNCTION__, __LINE__, __FILE__);     \
       fprintf (stderr, FMT, ##__VA_ARGS__);                                   \
       fprintf (stderr, "\n");                                                 \
-      quit ();                                                                \
+      __builtin_trap ();                                                      \
     }                                                                         \
   while (0)
-
-extern void quit (void) __attribute__ ((noreturn));
 
 #endif
