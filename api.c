@@ -84,14 +84,14 @@ api_handle (struct mg_http_message *msg)
   json_error_t jerr;
   json_t *rdat = NULL;
 
-  if (mg_vcmp (&msg->method, "POST") != 0)
+  if (mg_strcmp (msg->method, mg_str ("POST")) != 0)
     {
       ret.status = API_ERR_NOT_POST;
       ret.content = QUOTE ("非 POST 请求");
       goto ret;
     }
 
-  if (!(rdat = json_loadb (msg->body.ptr, msg->body.len, 0, &jerr)))
+  if (!(rdat = json_loadb (msg->body.buf, msg->body.len, 0, &jerr)))
     {
       ret.status = API_ERR_NOT_JSON;
       ret.content = QUOTE ("数据非 JSON 格式");
@@ -100,7 +100,7 @@ api_handle (struct mg_http_message *msg)
 
 #define API_MATCH(TYPE, API)                                                  \
   do                                                                          \
-    if (mg_http_match_uri (msg, "/api/" #TYPE "/" #API))                      \
+    if (mg_match (msg->uri, mg_str ("/api/" #TYPE "/" #API), NULL))           \
       {                                                                       \
         TYPE##_##API (&ret, rdat);                                            \
         goto ret;                                                             \
