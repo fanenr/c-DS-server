@@ -1,6 +1,8 @@
 CSTD   = -std=gnu11
-WARN   = -Wall -Wextra -Werror
-NOWARN = -Wno-unused-variable -Wno-unused-function
+CXXSTD = -std=c++17
+WRN    = -Wall -Wextra -Werror
+NOWRN  = -Wno-unused-variable -Wno-unused-function
+ANZ    = # -fanalyzer
 
 ifeq ($(MODE), debug)
 	LTO_LDFLAGS  =
@@ -26,7 +28,10 @@ ifeq ($(MODE), release)
 	ASAN_LDFLAGS =
 endif
 
-CFLAGS  = $(WARN) $(NOWARN) $(OPT_LEVEL) $(DBG_CFLAGS) $(LTO_CFLAGS) \
-          $(CSTD) $(ASAN_CFLAGS)
+CFLAGS   = $(WRN) $(NOWRN) $(OPT_LEVEL) $(DBG_CFLAGS) $(LTO_CFLAGS) \
+           $(CSTD) $(ASAN_CFLAGS) $(ANZ)
 
-LDFLAGS = $(DBG_LDFLAGS) $(LTO_LDFLAGS) $(ASAN_LDFLAGS)
+CXXFLAGS = $(WRN) $(NOWRN) $(OPT_LEVEL) $(DBG_CFLAGS) $(LTO_CFLAGS) \
+           $(CXXSTD) $(ASAN_CFLAGS)
+
+LDFLAGS  = $(DBG_LDFLAGS) $(LTO_LDFLAGS) $(ASAN_LDFLAGS)

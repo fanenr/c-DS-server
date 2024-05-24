@@ -5,9 +5,10 @@ srcs := main.c api.c table.c mongoose.c
 objs := $(srcs:%.c=%.o)
 libs := -ljansson
 
-.PHONY: all run
+.PHONY: all
 all: server
 
+.PHONY: run
 run: server
 	./server
 
@@ -17,10 +18,10 @@ server: $(objs)
 $(objs): %.o: %.c
 	gcc $(CFLAGS) -c $<
 
-.PHONY: clean
-clean:
-	rm -f *.o main
-
 .PHONY: json
 json: clean
 	bear -- make
+
+.PHONY: clean
+clean:
+	rm -f *.o main
