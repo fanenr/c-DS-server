@@ -2,7 +2,6 @@
 #define API_H
 
 #include <stdbool.h>
-struct mg_http_message;
 
 enum
 {
@@ -24,6 +23,7 @@ typedef struct
   const char *content;
 } api_ret;
 
+struct mg_http_message;
 extern api_ret api_handle (struct mg_http_message *msg);
 
 #endif

@@ -2,7 +2,7 @@ CSTD   = -std=gnu11
 CXXSTD = -std=c++17
 WRN    = -Wall -Wextra -Werror
 NOWRN  = -Wno-unused-variable -Wno-unused-function
-ANZ    = # -fanalyzer
+ANZ    = #-fanalyzer
 
 ifeq ($(MODE), debug)
 	LTO_LDFLAGS  =

@@ -1,7 +1,7 @@
-要求:
+Prerequisites:
   1. gcc (gnu11 at least)
   2. libjansson
   3. make
 
-构建:
-  make
+Build & Run:
+  make run
